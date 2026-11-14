@@ -1,5 +1,6 @@
 """État retenu : humeur de chaque appareil et pause (`~/.local/state/diapason/etat.json`)."""
 
+import copy
 import json
 import logging
 import os
@@ -33,16 +34,19 @@ class Etat:
             if not isinstance(appareils, dict) or not all(
                     isinstance(v, dict) for v in appareils.values()):
                 raise ValueError("« appareils » invalide")
-            return cls(chemin, appareils, bool(donnees.get("en_pause", False)))
+            return cls(chemin, appareils, donnees.get("en_pause") is True)
         except FileNotFoundError:
             return cls(chemin)
-        except (OSError, ValueError) as erreur:  # JSON invalide inclus (ValueError)
+        except OSError as erreur:  # lecture impossible : le fichier n'est pas touché
+            journal.warning("État illisible (%s), état vide : %s", chemin, erreur)
+            return cls(chemin)
+        except ValueError as erreur:  # JSON ou structure invalides
             corrompu = chemin.with_name(chemin.name + ".corrompu")
             journal.warning("État corrompu (%s), renommé en %s : %s", chemin, corrompu, erreur)
             try:
                 os.replace(chemin, corrompu)
-            except OSError:
-                pass
+            except OSError as echec:
+                journal.warning("Renommage de %s impossible : %s", chemin, echec)
             return cls(chemin)
 
     def humeur(self, identite: str) -> str | None:
@@ -57,7 +61,7 @@ class Etat:
         }
 
     def appareils(self) -> dict[str, dict]:
-        return self._appareils
+        return copy.deepcopy(self._appareils)
 
     def enregistrer(self) -> None:
         self._chemin.parent.mkdir(parents=True, exist_ok=True)
