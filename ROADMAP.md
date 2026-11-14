@@ -23,7 +23,8 @@ phase 1, une fois le besoin et l'approche validés.
 - [ ] Étude de l'existant : EasyEffects (déjà installé, 7.1.6, préréglages chargés selon la sortie), filtres `filter-chain` de PipeWire, base de corrections de casques AutoEq
 - [x] Choisir l'approche : filtre `filter-chain` PipeWire propre à Diapason (choisi par Charles le 14/11), EasyEffects écarté
 - [x] Document de conception dans `docs/superpowers/specs/`, validé par Charles le 14/11
-- [ ] Plan de mise en œuvre et révision de cette feuille de route
+- [x] Plan de mise en œuvre (`docs/superpowers/plans/2026-11-14-diapason-0.1.0.md`)
+- [ ] Révision des phases 2 à 5 après la 0.1.0
 
 ## Phase 2 — Reconnaître la sortie audio (provisoire)
 

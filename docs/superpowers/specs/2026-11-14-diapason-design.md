@@ -183,7 +183,9 @@ sont séparés de ceux qui parlent à PipeWire, pour pouvoir être testés.
 | Fête | −6,0 | 90 / +5,5 / 0,7 | 350 / −3,0 | 3200 / 1,0 / +1,5 | 9000 / +4,5 |
 
   Pour toutes les humeurs : coupe en passe-haut à 50 Hz, Q 0,707 ; air en étagère
-  haute, Q 0,7 ; boîte en pic, Q 1,0. Si la règle anti-saturation refuse l'une de ces
+  haute, Q 0,7 ; boîte en pic, Q 1,0. Constat du 14/11 (code de PipeWire 1.0.5,
+  `biquad.c`) : les étagères (`bq_lowshelf`, `bq_highshelf`) **ignorent Q** (pente
+  S = 1). Les Q des étagères sont gardés dans les fichiers, sans effet aujourd'hui. Si la règle anti-saturation refuse l'une de ces
   humeurs, on augmente la marge, sans toucher la courbe.
 
 - **Valeurs de départ de `haut-parleurs-pc`** : à régler à l'oreille avec Charles
@@ -227,8 +229,8 @@ sont séparés de ceux qui parlent à PipeWire, pour pouvoir être testés.
 
 - **D-Bus de session** : nom `io.github.mawena.Diapason`, objet
   `/io/github/mawena/Diapason`, implémenté avec `Gio` :
-  - méthodes : `Etat()`, `Humeurs()`, `ChoisirHumeur(nom)`, `Desactiver()`,
-    `Reactiver()` ;
+  - méthodes : `Etat()`, `Humeurs()`, `ChoisirHumeur(nom)`, `Pause()`,
+    `Reprise()`, `Appareils()` ;
   - signal : `EtatChange` (appareil, type, humeur, actif).
 
   L'indicateur et la commande passent tous les deux par cette API.
