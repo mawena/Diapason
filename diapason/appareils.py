@@ -23,8 +23,28 @@ class Carte:
     actif: str | None
 
 
+def _dict(valeur) -> dict:
+    return valeur if isinstance(valeur, dict) else {}
+
+
+def _liste(valeur) -> list:
+    return [v for v in valeur if isinstance(v, dict)] if isinstance(valeur, list) else []
+
+
+def _objets(dump, type_: str) -> list[dict]:
+    return [o for o in _liste(dump) if o.get("type") == type_]
+
+
+def _info(objet: dict) -> dict:
+    return _dict(objet.get("info"))
+
+
 def _props(objet: dict) -> dict:
-    return objet.get("info", {}).get("props", {})
+    return _dict(_info(objet).get("props"))
+
+
+def _params(objet: dict) -> dict:
+    return _dict(_info(objet).get("params"))
 
 
 def _est_bluetooth(props: dict) -> bool:
@@ -32,8 +52,12 @@ def _est_bluetooth(props: dict) -> bool:
 
 
 def _canaux(props: dict) -> int:
-    if props.get("audio.channels"):
-        return int(props["audio.channels"])
+    try:
+        canaux = int(props.get("audio.channels"))
+    except (TypeError, ValueError):
+        canaux = 0
+    if canaux > 0:
+        return canaux
     position = str(props.get("audio.position", "")).strip("[] ").replace(",", " ").split()
     return len(position) or 2
 
@@ -42,7 +66,7 @@ def _route_active(appareil: dict | None, props_noeud: dict) -> str | None:
     """Nom de la route de sortie de l'appareil (carte) qui porte ce nœud."""
     if appareil is None:
         return None
-    for route in appareil.get("info", {}).get("params", {}).get("Route", []):
+    for route in _liste(_params(appareil).get("Route")):
         if (route.get("direction") == "Output"
                 and route.get("device") == props_noeud.get("card.profile.device")):
             return route.get("name")
@@ -62,13 +86,11 @@ def _type_alsa(route: str | None, noeud: str) -> str:
 
 
 def lire_sorties(dump: list[dict]) -> dict[str, Sortie]:
-    appareils = {o["id"]: o for o in dump if o.get("type") == "PipeWire:Interface:Device"}
+    appareils = {o["id"]: o for o in _objets(dump, "PipeWire:Interface:Device") if "id" in o}
     sorties = {}
-    for objet in dump:
-        if objet.get("type") != "PipeWire:Interface:Node":
-            continue
+    for objet in _objets(dump, "PipeWire:Interface:Node"):
         props = _props(objet)
-        nom_noeud = props.get("node.name", "")
+        nom_noeud = str(props.get("node.name") or "")
         if (props.get("media.class") != "Audio/Sink" or "device.id" not in props
                 or nom_noeud.startswith("diapason")):
             continue
@@ -78,7 +100,11 @@ def lire_sorties(dump: list[dict]) -> dict[str, Sortie]:
         description_carte = props_carte.get("device.description")
         if _est_bluetooth(props_carte):
             type_ = "casque" if props_carte.get("device.form-factor") == "headphone" else "enceinte-bluetooth"
-            identite = f"bluez:{props_carte.get('api.bluez5.address')}"
+            adresse = props_carte.get("api.bluez5.address")
+            if adresse:
+                identite = f"bluez:{adresse}"
+            else:
+                identite = f"{carte}:{nom_noeud}" if carte else nom_noeud
         else:
             route = _route_active(appareil, props)
             type_ = _type_alsa(route, nom_noeud)
@@ -95,32 +121,31 @@ def lire_sorties(dump: list[dict]) -> dict[str, Sortie]:
 
 def lire_cartes(dump: list[dict]) -> dict[str, Carte]:
     cartes = {}
-    for objet in dump:
-        if objet.get("type") != "PipeWire:Interface:Device":
-            continue
+    for objet in _objets(dump, "PipeWire:Interface:Device"):
         props = _props(objet)
         nom = props.get("device.name")
         if not nom:
             continue
-        params = objet.get("info", {}).get("params", {})
+        params = _params(objet)
         bluetooth = _est_bluetooth(props)
-        actifs = params.get("Profile", [])
+        actifs = [p for p in _liste(params.get("Profile")) if p.get("name")]
         cartes[nom] = Carte(
             nom=nom,
             bluetooth=bluetooth,
-            identite=f"bluez:{props.get('api.bluez5.address')}" if bluetooth else None,
-            profils=tuple(p["name"] for p in params.get("EnumProfile", [])),
+            identite=(f"bluez:{props['api.bluez5.address']}"
+                      if bluetooth and props.get("api.bluez5.address") else None),
+            profils=tuple(p["name"] for p in _liste(params.get("EnumProfile")) if p.get("name")),
             actif=actifs[0]["name"] if actifs else None,
         )
     return cartes
 
 
 def sortie_par_defaut(dump: list[dict]) -> str | None:
-    for objet in dump:
-        if (objet.get("type") == "PipeWire:Interface:Metadata"
-                and objet.get("props", {}).get("metadata.name") == "default"):
-            for entree in objet.get("metadata", []):
-                if entree.get("key") == "default.audio.sink":
-                    valeur = entree.get("value")
-                    return valeur.get("name") if isinstance(valeur, dict) else None
+    for objet in _objets(dump, "PipeWire:Interface:Metadata"):
+        if _dict(objet.get("props")).get("metadata.name") != "default":
+            continue
+        for entree in _liste(objet.get("metadata")):
+            if entree.get("key") == "default.audio.sink":
+                valeur = entree.get("value")
+                return valeur.get("name") if isinstance(valeur, dict) else None
     return None
