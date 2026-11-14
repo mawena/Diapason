@@ -1,12 +1,14 @@
 """Configuration `filter-chain` pour `pipewire -c` et paramètres à poser à chaud (`pw-cli`)."""
 
 import math
+import re
 
 from .appareils import Sortie
-from .profils import CONTROLES, Humeur, Profil
+from .profils import CONTROLES, FILTRES, Humeur, Profil
 
 NOEUD = "diapason"
 NOEUD_SORTIE = "diapason.sortie"
+_NOM = re.compile(r"[a-z0-9_]+")
 
 
 def _chaine(texte: str) -> str:
@@ -23,13 +25,24 @@ def _nombre(valeur) -> str:
     return texte + "0" if texte.endswith(".") else texte
 
 
-def _controles(filtre: str) -> tuple[str, ...]:
-    # Le passe-haut de PipeWire n'a pas de port « Gain » (seulement Freq et Q).
-    return tuple(c for c in CONTROLES if not (filtre == "bq_highpass" and c == "Gain"))
+def _verifier(profil: Profil, humeur: Humeur) -> None:
+    """Lève ValueError si la chaîne ou les réglages ne peuvent pas être écrits sans risque."""
+    for nom, filtre in profil.chaine:
+        if not _NOM.fullmatch(nom):
+            raise ValueError(f"nom de filtre invalide « {nom} » : seuls a-z, 0-9 et _ sont permis")
+        if filtre not in FILTRES:
+            raise ValueError(f"filtre inconnu « {filtre} » pour « {nom} »")
+        reglage = humeur.reglages.get(nom)
+        if reglage is None:
+            raise ValueError(f"l'humeur « {humeur.id} » n'a pas de réglage pour le filtre « {nom} »")
+        for controle in CONTROLES:
+            if controle not in reglage:
+                raise ValueError(f"réglage « {nom}:{controle} » absent de l'humeur « {humeur.id} »")
 
 
 def parametres(profil: Profil, humeur: Humeur) -> dict[str, float]:
     """Clés « <nom>:<Freq|Q|Gain> », dans l'ordre de la chaîne."""
+    _verifier(profil, humeur)
     resultat = {}
     for nom, _filtre in profil.chaine:
         for controle in CONTROLES:
@@ -41,10 +54,11 @@ def parametres(profil: Profil, humeur: Humeur) -> dict[str, float]:
 
 
 def texte_conf(sortie: Sortie, profil: Profil, humeur: Humeur) -> str:
+    _verifier(profil, humeur)
     noeuds = []
     for nom, filtre in profil.chaine:
         reglage = humeur.reglages[nom]
-        controle = " ".join(f'"{c}" = {_nombre(reglage[c])}' for c in _controles(filtre))
+        controle = " ".join(f'"{c}" = {_nombre(reglage[c])}' for c in CONTROLES)
         noeuds.append(f"                    {{ type = builtin name = {nom} label = {filtre} control = {{ {controle} }} }}")
     liens = [
         f'                    {{ output = "{a[0]}:Out" input = "{b[0]}:In" }}'
