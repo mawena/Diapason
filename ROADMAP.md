@@ -18,6 +18,8 @@ phase 1, une fois le besoin et l'approche validés.
 
 - [ ] Cerner le besoin : ce qui gêne dans le son aujourd'hui, sur quels appareils, ce qu'est un son « magnifique » pour Charles
 - [ ] Inventaire des sorties du poste et de ce que PipeWire sait d'elles (Bluetooth LN-1008BT, haut-parleurs et prise casque du PC, dock Dell D6000, HDMI)
+- [x] Essai jetable sur l'enceinte LN-1008BT : codec SBC-XQ au lieu de SBC, égaliseur `filter-chain` réglé à chaud sans coupure ; Charles aime la « basse douce »
+- [x] Essai des humeurs : cinq profils à basse douce (Douceur, Éclat, Cocon, Voix, Fête) changés à chaud
 - [ ] Étude de l'existant : EasyEffects (déjà installé, 7.1.6, préréglages chargés selon la sortie), filtres `filter-chain` de PipeWire, base de corrections de casques AutoEq
 - [ ] Choisir l'approche (piloter EasyEffects, ou un filtre PipeWire propre à Diapason) et la présenter à Charles
 - [ ] Document de conception dans `docs/superpowers/specs/`, validé par Charles
@@ -33,6 +35,8 @@ phase 1, une fois le besoin et l'approche validés.
 
 - [ ] Format d'un profil (égaliseur, volume de compensation, basses, spatialisation…)
 - [ ] Profils de départ par type d'appareil
+- [ ] **Humeurs** : plusieurs profils par appareil, à changer selon l'envie (signature « basse douce » de Charles), sans coupure
+- [ ] Choix automatique du meilleur codec Bluetooth disponible (SBC-XQ, AAC, LDAC…)
 - [ ] Corrections connues des casques (base AutoEq) quand le modèle est reconnu
 - [ ] Application du profil sans coupure ni saturation (marge de gain, limiteur)
 
