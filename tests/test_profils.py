@@ -120,6 +120,59 @@ class TestProfils(unittest.TestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn("enceinte-bluetooth.toml", messages[0])
 
+    def verifier_fichier(self, contenu, entete=None):
+        user = self.dossier_utilisateur(contenu, entete)
+        cat = Catalogue.charger([DATA, user])
+        p = cat.profil("enceinte-bluetooth")
+        self.assertEqual(len(p.chaine), 6)
+        self.assertEqual(p.humeurs["cocon"].reglages["grave"]["Gain"], 5.0)
+        return p, cat.verifier()
+
+    def test_toml_mal_type_ne_plante_pas(self):
+        cas = [("humeurs = 3\n", None), ("[humeurs]\ncocon = 5\n", None),
+               ("", 'type = "enceinte-bluetooth"\nchaine = 5\n'),
+               ("", 'type = [1]\n'),
+               ("", 'type = "enceinte-bluetooth"\nhumeur_par_defaut = 4\n')]
+        for contenu, entete in cas:
+            with self.subTest(contenu=contenu, entete=entete):
+                _, messages = self.verifier_fichier(contenu, entete)
+                self.assertEqual(len(messages), 1, messages)
+
+    def test_filtre_inconnu_refuse(self):
+        user = self.dossier_utilisateur("", 'type = "autre"\nchaine = [["a", "bq_foo"]]\n')
+        cat = Catalogue.charger([DATA, user])
+        self.assertEqual(len(cat.verifier()), 1)
+        self.assertIn("bq_foo", cat.verifier()[0])
+        self.assertEqual(list(cat.profil("autre").humeurs), ["neutre"])
+        user = self.dossier_utilisateur("", 'type = "enceinte-bluetooth"\nchaine = [["marge", "bq_foo"]]\n')
+        cat = Catalogue.charger([DATA, user])
+        self.assertEqual(len(cat.profil("enceinte-bluetooth").chaine), 6)
+        self.assertEqual(len(cat.verifier()), 1)
+
+    def test_humeur_par_defaut_inconnue_repli(self):
+        user = self.dossier_utilisateur("", 'type = "enceinte-bluetooth"\nhumeur_par_defaut = "zen"\n')
+        cat = Catalogue.charger([DATA, user])
+        p = cat.profil("enceinte-bluetooth")
+        self.assertIn(p.humeur_par_defaut, p.humeurs)
+        self.assertEqual(p.humeur_par_defaut, "cocon")
+        self.assertEqual(len(cat.verifier()), 1)
+        self.assertIn("zen", cat.verifier()[0])
+
+    def test_booleen_n_est_pas_un_nombre(self):
+        texte = humeur_toml("cocon").replace("Freq = 100.0", "Freq = true")
+        _, messages = self.verifier_fichier(texte)
+        self.assertEqual(len(messages), 1)
+        self.assertIn("grave", messages[0])
+
+    def test_id_reserve_refuse(self):
+        for ident in ("desactive", "Désactivé", "neutre"):
+            with self.subTest(ident=ident):
+                p, messages = self.verifier_fichier(humeur_toml(ident))
+                self.assertNotIn("desactive", p.humeurs)
+                self.assertEqual(p.humeurs["neutre"].titre, "Neutre")
+                self.assertEqual(len(messages), 1)
+                self.assertIn("réservé", messages[0])
+
     def test_dossier_absent_ignore(self):
         cat = Catalogue.charger([DATA, Path("/nexiste/pas")])
         self.assertEqual(cat.verifier(), [])
