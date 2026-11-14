@@ -23,6 +23,7 @@ class ProcessusFiltre:
         self._processus = None
 
     def demarrer(self, conf: str) -> None:
+        self.arreter()
         self.dossier.mkdir(parents=True, exist_ok=True)
         chemin = (self.dossier / "filtre.conf").resolve()
         chemin.write_text(conf)

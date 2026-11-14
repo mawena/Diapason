@@ -50,6 +50,25 @@ class TestFiltre(unittest.TestCase):
             self.assertFalse(f.vivant)
             self.assertIsNone(f.pid)
 
+    def test_demarrer_deux_fois_arrete_le_premier(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            appels = []
+
+            def lancer(cmd, **kw):
+                p = FauxPopen(cmd, **kw)
+                p.pid = 100 + len(appels)
+                appels.append(p)
+                return p
+
+            f = ProcessusFiltre(Path(tmp), lancer)
+            f.demarrer("a\n")
+            f.demarrer("b\n")
+            self.assertEqual(appels[0].signaux, [signal.SIGTERM])
+            self.assertEqual(appels[1].signaux, [])
+            self.assertEqual(f.pid, 101)
+            self.assertEqual((Path(tmp) / "filtre.conf").read_text(), "b\n")
+            f.arreter()
+
     def test_arreter_sans_processus(self):
         f = ProcessusFiltre(Path("/tmp/inutile"), lambda *a, **k: None)
         f.arreter()
