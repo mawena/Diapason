@@ -22,7 +22,7 @@ phase 1, une fois le besoin et l'approche validés.
 - [x] Essai des humeurs : cinq profils à basse douce (Douceur, Éclat, Cocon, Voix, Fête) changés à chaud
 - [ ] Étude de l'existant : EasyEffects (déjà installé, 7.1.6, préréglages chargés selon la sortie), filtres `filter-chain` de PipeWire, base de corrections de casques AutoEq
 - [x] Choisir l'approche : filtre `filter-chain` PipeWire propre à Diapason (choisi par Charles le 14/11), EasyEffects écarté
-- [ ] Document de conception dans `docs/superpowers/specs/`, validé par Charles
+- [x] Document de conception dans `docs/superpowers/specs/`, validé par Charles le 14/11
 - [ ] Plan de mise en œuvre et révision de cette feuille de route
 
 ## Phase 2 — Reconnaître la sortie audio (provisoire)

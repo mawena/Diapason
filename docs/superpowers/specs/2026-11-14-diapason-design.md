@@ -1,6 +1,6 @@
 # Diapason — conception de la version 0.1.0
 
-Date : 14/11/2026 · Statut : relu, en attente de validation par Charles · Feuille de route : `ROADMAP.md`
+Date : 14/11/2026 · Statut : validé par Charles le 14/11/2026 · Feuille de route : `ROADMAP.md`
 
 ## 1. Intention
 
@@ -127,9 +127,14 @@ sont séparés de ceux qui parlent à PipeWire, pour pouvoir être testés.
 - **Appareils laissés sans filtre** : sortie de plus de deux canaux, appareil mis sur
   « Désactivé » par Charles. Le filtre est alors arrêté et la sortie réelle reste la
   sortie par défaut.
-- **Écoute des événements** : `pactl subscribe` (événements `server`, `sink`, `card`)
-  suivi de lectures en `pactl -f json` ou `pw-dump`. Au constructeur de choisir.
-  Contrainte : aucune boucle d'attente active.
+- **Écoute des événements** : `pactl subscribe` (événements `server`, `sink`, `card`),
+  sans boucle d'attente active.
+- **Lecture de l'état : `pw-dump`**, pas `pactl -f json`. Constat du 14/11 : le JSON de
+  `pactl` 16.1 remplace toute chaîne non ASCII par `(null)` (noms d'appareils
+  accentués, et le « · » de « LN-1008BT · Diapason »). `pactl` reste utilisé pour les
+  actions (sortie par défaut, déplacement des flux, profil de carte, volume) et pour
+  lire le volume (`pactl get-sink-volume`, sortie texte ASCII), toujours avec
+  `LC_ALL=C`.
 
 ### 6.3 Volume
 
@@ -196,9 +201,10 @@ sont séparés de ceux qui parlent à PipeWire, pour pouvoir être testés.
 
   L'identité sert de clé à l'humeur retenue.
 - **Type** :
-  - Bluetooth : `device.form-factor` ou `device.icon-name`. Casque ou écouteurs :
-    type `casque` (sans profil livré en 0.1.0, donc Neutre). Enceinte, ou forme
-    inconnue en A2DP : `enceinte-bluetooth`.
+  - Bluetooth : `device.form-factor`. `headphone` : type `casque` (sans profil livré
+    en 0.1.0, donc Neutre). Tout le reste (`speaker`, `headset`, `hands-free`,
+    absent…) : `enceinte-bluetooth`. Constat du 14/11 : l'enceinte LN-1008BT se
+    déclare `headset` (elle a un micro), comme beaucoup de petites enceintes.
   - Port ALSA « Speaker » du PC : `haut-parleurs-pc`. Port « Headphones » : `casque`.
   - HDMI, DisplayPort ou IEC958 : `hdmi` (Neutre).
 - Un fichier `~/.config/diapason/appareils.toml` permet de forcer le type d'un
