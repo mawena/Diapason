@@ -1,0 +1,15 @@
+# Construction et paquets
+dist/
+build/
+debian/.debhelper/
+debian/diapason/
+*.deb
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Outils de travail
+.superpowers/
+.claude/settings.local.json
